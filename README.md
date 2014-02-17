@@ -1,6 +1,8 @@
 # Gost
 
-Gost is a port of Ost
+Gost is a Go port of [Ost](https://github.com/soveran/ost) for fun and profit.
+If you want something **really** minimal you should take a look at
+[Ostgo](https://github.com/soveran/ostgo)
 
 ## Connect to a Redis server
 
