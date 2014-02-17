@@ -8,8 +8,8 @@ import (
 )
 
 func init() {
-        conn, _ := redis.Dial("tcp", ":6379")
-        conn.Do("FLUSHDB")
+	conn, _ := redis.Dial("tcp", ":6379")
+	conn.Do("FLUSHDB")
 }
 
 func TestAccessToQueue(t *testing.T) {

@@ -30,18 +30,17 @@ func (q *queue) each(fn caller) {
 			break
 		}
 
-                item, err := redis.String(q.conn.Do("BRPOPLPUSH", q.Key, q.Backup, 2))
+		item, err := redis.String(q.conn.Do("BRPOPLPUSH", q.Key, q.Backup, 2))
 
-                if err != nil {
-                        continue
-                }
+		if err != nil {
+			continue
+		}
 
-                go func() {
-                        if success := fn(item); success {
-                                q.conn.Do("LPOP", q.Backup)
-                        }
-                }()
-
+		go func() {
+			if success := fn(item); success {
+				q.conn.Do("LPOP", q.Backup)
+			}
+		}()
 
 	}
 }
@@ -78,35 +77,35 @@ func (g *Gost) createQueue(name string) *queue {
 	return q
 }
 
-func (g *Gost) Push(queue_name string, id string) {
-	queue := g.get_queue(queue_name)
+func (g *Gost) Push(queueName string, id string) {
+	queue := g.getQueue(queueName)
 	queue.push(id)
 }
 
-func (g *Gost) get_queue(queue_name string) *queue {
-	queue_id := g.Prefix + ":" + queue_name
+func (g *Gost) getQueue(queueName string) *queue {
+	queueId := g.Prefix + ":" + queueName
 
 	g.mutex.Lock()
-	queue := g.queues[queue_id]
+	queue := g.queues[queueId]
 	g.mutex.Unlock()
 
 	if queue == nil {
-		queue = g.createQueue(queue_name)
+		queue = g.createQueue(queueName)
 		g.mutex.Lock()
-		g.queues[queue_id] = queue
+		g.queues[queueId] = queue
 		g.mutex.Unlock()
 	}
 
 	return queue
 }
 
-func (g *Gost) Each(queue_name string, fn caller) {
-	queue := g.get_queue(queue_name)
+func (g *Gost) Each(queueName string, fn caller) {
+	queue := g.getQueue(queueName)
 	queue.each(fn)
 }
 
-func (g *Gost) Items(queue_name string) []string {
-	queue := g.get_queue(queue_name)
+func (g *Gost) Items(queueName string) []string {
+	queue := g.getQueue(queueName)
 	return queue.items()
 }
 
