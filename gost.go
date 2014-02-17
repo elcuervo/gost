@@ -2,9 +2,9 @@ package gost
 
 import (
 	"github.com/garyburd/redigo/redis"
+	"os"
+	"strconv"
 	"sync"
-        "os"
-        "strconv"
 )
 
 type queue struct {
@@ -72,10 +72,10 @@ func Connect(url string) *Gost {
 
 func (g *Gost) createQueue(name string) *queue {
 	q := new(queue)
-        hostname, _ := os.Hostname()
+	hostname, _ := os.Hostname()
 
 	q.Key = g.Prefix + ":" + name
-        q.Backup = q.Key + ":" + hostname + ":" + strconv.Itoa(os.Getpid())
+	q.Backup = q.Key + ":" + hostname + ":" + strconv.Itoa(os.Getpid())
 	q.conn = g.Redis
 
 	return q
