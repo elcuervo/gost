@@ -32,7 +32,7 @@ func TestReadingQueue(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Millisecond * 500)
-		g.StopAll()
+		g.Stop()
 	}()
 
 	g.Each("my_queue", func(id string) bool {

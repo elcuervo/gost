@@ -30,17 +30,18 @@ func (q *queue) each(fn caller) {
 			break
 		}
 
-		item, err := redis.String(q.conn.Do("BRPOPLPUSH", q.Key, q.Backup, 2))
+                item, err := redis.String(q.conn.Do("BRPOPLPUSH", q.Key, q.Backup, 2))
 
-		if err != nil {
-			continue
-		}
+                if err != nil {
+                        continue
+                }
 
-		success := fn(item)
+                go func() {
+                        if success := fn(item); success {
+                                q.conn.Do("LPOP", q.Backup)
+                        }
+                }()
 
-		if success {
-			q.conn.Do("LPOP", q.Backup)
-		}
 
 	}
 }
