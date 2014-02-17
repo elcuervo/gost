@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type queue struct {
@@ -12,15 +13,21 @@ type queue struct {
 	Backup string
 	Stop   bool
 
-	conn redis.Conn
+	pool *redis.Pool
 }
 
 func (q *queue) push(id string) {
-	q.conn.Do("LPUSH", q.Key, id)
+	conn := q.pool.Get()
+	defer conn.Close()
+
+	conn.Do("LPUSH", q.Key, id)
 }
 
 func (q *queue) items() []string {
-	items, _ := redis.Strings(q.conn.Do("LRANGE", q.Key, 0, -1))
+	conn := q.pool.Get()
+	defer conn.Close()
+
+	items, _ := redis.Strings(conn.Do("LRANGE", q.Key, 0, -1))
 	return items
 }
 
@@ -32,7 +39,10 @@ func (q *queue) each(fn caller) {
 			break
 		}
 
-		item, err := redis.String(q.conn.Do("BRPOPLPUSH", q.Key, q.Backup, 2))
+		conn := q.pool.Get()
+		defer conn.Close()
+
+		item, err := redis.String(conn.Do("BRPOPLPUSH", q.Key, q.Backup, 2))
 
 		if err != nil {
 			continue
@@ -40,7 +50,7 @@ func (q *queue) each(fn caller) {
 
 		go func() {
 			if success := fn(item); success {
-				q.conn.Do("LPOP", q.Backup)
+				conn.Do("LPOP", q.Backup)
 			}
 		}()
 
@@ -49,7 +59,7 @@ func (q *queue) each(fn caller) {
 
 type Gost struct {
 	Prefix string
-	Redis  redis.Conn
+	Redis  *redis.Pool
 	mutex  sync.Mutex
 	queues map[string]*queue
 }
@@ -59,10 +69,21 @@ func Connect(url string) *Gost {
 	g.queues = make(map[string]*queue)
 	g.Prefix = "ost"
 
-	conn, err := redis.Dial("tcp", url)
+	conn := &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", url)
+			if err != nil {
+				return nil, err
+			}
+			return c, err
+		},
 
-	if err != nil {
-		panic(err)
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
 	}
 
 	g.Redis = conn
@@ -76,7 +97,7 @@ func (g *Gost) createQueue(name string) *queue {
 
 	q.Key = g.Prefix + ":" + name
 	q.Backup = q.Key + ":" + hostname + ":" + strconv.Itoa(os.Getpid())
-	q.conn = g.Redis
+	q.pool = g.Redis
 
 	return q
 }
