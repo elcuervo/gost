@@ -14,7 +14,7 @@ func init() {
 
 func TestAccessToQueue(t *testing.T) {
 	assert := asserts.NewTestingAssertion(t, true)
-	g := Create(":6379")
+	g := Connect(":6379")
 
 	g.Push("my_queue", "1")
 	g.Push("my_queue", "2")
@@ -25,14 +25,14 @@ func TestAccessToQueue(t *testing.T) {
 }
 
 func TestReadingQueue(t *testing.T) {
-	g := Create(":6379")
+	g := Connect(":6379")
 	g.Prefix = "test:queues"
 
 	g.Push("my_queue", "1")
 
 	go func() {
 		time.Sleep(time.Millisecond * 500)
-		g.Stop()
+		g.StopAll()
 	}()
 
 	g.Each("my_queue", func(id string) bool {

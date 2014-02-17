@@ -52,7 +52,7 @@ type Gost struct {
 	queues map[string]*queue
 }
 
-func Create(url string) *Gost {
+func Connect(url string) *Gost {
 	g := new(Gost)
 	g.queues = make(map[string]*queue)
 	g.Prefix = "gost:queues"
