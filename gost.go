@@ -3,6 +3,8 @@ package gost
 import (
 	"github.com/garyburd/redigo/redis"
 	"sync"
+        "os"
+        "strconv"
 )
 
 type queue struct {
@@ -55,7 +57,7 @@ type Gost struct {
 func Connect(url string) *Gost {
 	g := new(Gost)
 	g.queues = make(map[string]*queue)
-	g.Prefix = "gost:queues"
+	g.Prefix = "ost"
 
 	conn, err := redis.Dial("tcp", url)
 
@@ -70,8 +72,10 @@ func Connect(url string) *Gost {
 
 func (g *Gost) createQueue(name string) *queue {
 	q := new(queue)
+        hostname, _ := os.Hostname()
+
 	q.Key = g.Prefix + ":" + name
-	q.Backup = q.Key + ":backup"
+        q.Backup = q.Key + ":" + hostname + ":" + strconv.Itoa(os.Getpid())
 	q.conn = g.Redis
 
 	return q
