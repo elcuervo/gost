@@ -1,6 +1,7 @@
 package gost
 
 import (
+	"github.com/elcuervo/redisurl"
 	"github.com/garyburd/redigo/redis"
 	"os"
 	"strconv"
@@ -16,11 +17,13 @@ type queue struct {
 	pool *redis.Pool
 }
 
-func (q *queue) push(id string) {
+func (q *queue) push(id string) bool {
 	conn := q.pool.Get()
 	defer conn.Close()
 
-	conn.Do("LPUSH", q.Key, id)
+	_, err := conn.Do("LPUSH", q.Key, id)
+
+	return err == nil
 }
 
 func (q *queue) items() []string {
@@ -69,14 +72,31 @@ func Connect(url string) *Gost {
 	g.queues = make(map[string]*queue)
 	g.Prefix = "ost"
 
+	parsed := redisurl.Parse(url)
+
 	conn := &redis.Pool{
 		MaxIdle:     3,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", url)
+			c, err := redis.Dial("tcp", parsed.Url)
 			if err != nil {
 				return nil, err
 			}
+
+			if parsed.Database > 0 {
+				_, err := c.Do("SELECT", parsed.Database)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			if parsed.Password != "" {
+				_, err = c.Do("AUTH", parsed.Password)
+				if err != nil {
+					return nil, err
+				}
+			}
+
 			return c, err
 		},
 

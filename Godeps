@@ -1,2 +1,3 @@
-github.com/garyburd/redigo/redis
-git.tideland.biz/gots/asserts
+github.com/stretchr/testify 24fb97e3a8ca3396e2a7eaf615626565b771fd3b
+github.com/garyburd/redigo/redis a470367e65a4a6986739b387f0e0aaa034d55466
+github.com/elcuervo/redisurl 86d77c488bb8bcc8b2809ed77544054cb234da0c
