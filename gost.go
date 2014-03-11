@@ -37,25 +37,23 @@ func (q *queue) items() []string {
 type caller func(string) bool
 
 func (q *queue) each(fn caller) {
+        conn := q.pool.Get()
+        defer conn.Close()
+
 	for {
 		if q.Stop == true {
 			break
 		}
 
-		conn := q.pool.Get()
-		defer conn.Close()
-
-		item, err := redis.String(conn.Do("BRPOPLPUSH", q.Key, q.Backup, 2))
+		item, err := redis.String(conn.Do("BRPOPLPUSH", q.Key, q.Backup, 5))
 
 		if err != nil {
 			continue
 		}
 
-		go func() {
-			if success := fn(item); success {
-				conn.Do("LPOP", q.Backup)
-			}
-		}()
+                if success := fn(item); success {
+                        conn.Do("LPOP", q.Backup)
+                }
 
 	}
 }
