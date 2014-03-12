@@ -34,6 +34,14 @@ func (q *queue) items() []string {
 	return items
 }
 
+func (q *queue) size() int {
+	conn := q.pool.Get()
+	defer conn.Close()
+
+	size, _ := redis.Int(conn.Do("LLEN", q.Key))
+	return size
+}
+
 type caller func(string) bool
 
 func (q *queue) each(fn caller) {
@@ -156,4 +164,9 @@ func (g *Gost) Stop() {
 	for _, queue := range g.queues {
 		queue.Stop = true
 	}
+}
+
+func (g *Gost) Size(queueName string) int {
+	queue := g.getQueue(queueName)
+	return queue.size()
 }

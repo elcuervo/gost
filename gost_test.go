@@ -39,3 +39,30 @@ func TestReadingQueue(t *testing.T) {
 		return true
 	})
 }
+
+func TestQueueSize(t *testing.T) {
+	assert := asserts.NewTestingAssertion(t, true)
+	g := Connect(":6379")
+
+	c := make(chan string, 1)
+
+	assert.Equal(g.Size("my_queue2"), 0)
+
+	g.Push("my_queue2", "1")
+
+	assert.Equal(g.Size("my_queue2"), 1)
+
+	go func() {
+		time.Sleep(time.Millisecond * 1000)
+		g.Stop()
+	}()
+
+	g.Each("my_queue2", func(id string) bool {
+		c <- id
+		return true
+	})
+
+	<-c
+
+	assert.Equal(g.Size("my_queue2"), 0)
+}
